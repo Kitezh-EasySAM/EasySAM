@@ -1,8 +1,10 @@
 /**
  * `make user LOGIN=ivanov [ROLE=admin|viewer] [NAME="Иванов И."] [PASSWORD=…]` — создать пользователя интерфейса
- * или сбросить пароль существующему (все его сессии завершаются). Без PASSWORD — случайный, печатается один раз.
+ * или сбросить пароль существующему (все его сессии завершаются). Без PASSWORD — случайный, показывается один раз
+ * прямо в терминале (/dev/tty, не stdout): в логи и перенаправленный вывод не попадает.
  * Пишет прямо в БД (DB_PATH из .env), сервер можно не останавливать.
  */
+import { closeSync, openSync, writeSync } from "node:fs";
 import { config } from "../config.ts";
 import { openDb } from "../db.ts";
 import { checkPasswordStrength, createUser, loginProblem, randomPassword, setPassword } from "../services/users.ts";
@@ -17,6 +19,16 @@ const role =
 if (!role) {
   console.error("ROLE: admin или viewer");
   process.exit(1);
+}
+// случайный пароль показываем только человеку у терминала — проверяем терминал до любых изменений в БД
+let tty: number | null = null;
+if (!process.env.PASSWORD) {
+  try {
+    tty = openSync("/dev/tty", "w");
+  } catch {
+    console.error("нет терминала, чтобы показать случайный пароль, — задайте его: make user LOGIN=… PASSWORD=…");
+    process.exit(1);
+  }
 }
 const password = process.env.PASSWORD || randomPassword();
 const weak = checkPasswordStrength(password, { login, name: process.env.NAME });
@@ -41,4 +53,8 @@ if (ex) {
   createUser(db, { login, password, role, name: process.env.NAME ?? null });
   console.log(`Создан пользователь «${login}», роль: ${role}.`);
 }
-console.log(process.env.PASSWORD ? "Пароль — заданный в PASSWORD." : `Пароль (показывается один раз): ${password}`);
+if (tty === null) console.log("Пароль — заданный в PASSWORD.");
+else {
+  writeSync(tty, `Пароль (показывается один раз): ${password}\n`);
+  closeSync(tty);
+}

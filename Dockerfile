@@ -10,7 +10,7 @@
 FROM node:26-slim AS web
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 
@@ -43,7 +43,7 @@ ENV NODE_ENV=production \
 # зависимости отдельным слоем (кешируется, пока не менялся lock-файл)
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
-RUN npm ci --omit=dev --workspace server --no-audit --no-fund && npm cache clean --force
+RUN npm ci --ignore-scripts --omit=dev --workspace server --no-audit --no-fund && npm cache clean --force
 
 COPY server/src server/src
 COPY server/assets server/assets

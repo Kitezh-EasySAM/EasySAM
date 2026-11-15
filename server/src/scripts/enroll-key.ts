@@ -3,6 +3,8 @@
  * Ключ показывается ОДИН раз — на сервере хранится только хеш. С ADMIN_TOKEN — через API (SAM_URL, по умолч.
  *   http://localhost:8000), без него — прямо в БД (DB_PATH).
  */
+/** Значение из окружения или ответа сервера — в терминал без управляющих символов (перевод строки, ESC-коды). */
+const clean = (v: unknown) => String(v).replace(/\p{Cc}/gu, " ");
 const base = process.env.SAM_URL ?? "http://localhost:8000";
 const days = Number(process.env.DAYS) || 0;
 const body = {
@@ -18,12 +20,12 @@ if (process.env.ADMIN_TOKEN) {
     headers: { "content-type": "application/json", authorization: `Bearer ${process.env.ADMIN_TOKEN}` },
     body: JSON.stringify(body),
   }).catch((e) => {
-    console.error(`нет связи с ${base}: ${e.message}`);
+    console.error(`нет связи с ${clean(base)}: ${clean(e.message)}`);
     process.exit(1);
   });
   d = (await r.json()) as typeof d;
   if (!r.ok || !d.key) {
-    console.error(`ошибка ${r.status}: ${d.error ?? JSON.stringify(d)}`);
+    console.error(`ошибка ${r.status}: ${clean(d.error ?? JSON.stringify(d))}`);
     process.exit(1);
   }
 } else {
@@ -33,12 +35,12 @@ if (process.env.ADMIN_TOKEN) {
   const { key } = createEnrollKey(openDb(config.dbPath), body);
   d = { key, ...body };
 }
-const host = new URL(base).hostname;
-console.log(
-  `Ключ регистрации «${d.title}»${d.max_uses ? `, до ${d.max_uses} ПК` : ""}${d.expires_at ? `, до ${d.expires_at}` : ""} (показывается один раз):\n`,
-);
-console.log(`  ${d.key}\n`);
+const host = clean(new URL(base).hostname);
+const shownKey = clean(d.key);
+const limits = `${d.max_uses ? `, до ${clean(d.max_uses)} ПК` : ""}${d.expires_at ? `, до ${clean(d.expires_at)}` : ""}`;
+console.log(`Ключ регистрации «${clean(d.title)}»${limits} (показывается один раз):\n`);
+console.log(`  ${shownKey}\n`);
 console.log("На ПК — PowerShell от имени администратора, в папке с sam-agent.exe и install-sam-agent.ps1:\n");
 console.log(
-  `  powershell -ExecutionPolicy Bypass -File .\\install-sam-agent.ps1 -Server ${host === "localhost" || host === "127.0.0.1" ? "<IP-этого-сервера>" : host} -EnrollKey ${d.key}\n`,
+  `  powershell -ExecutionPolicy Bypass -File .\\install-sam-agent.ps1 -Server ${host === "localhost" || host === "127.0.0.1" ? "<IP-этого-сервера>" : host} -EnrollKey ${shownKey}\n`,
 );

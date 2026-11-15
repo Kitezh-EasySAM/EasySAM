@@ -17,8 +17,19 @@ async function parse<T>(r: Response): Promise<T> {
   return data as T;
 }
 
+/**
+ * Адрес запроса: только свой сервер и только /api/… — путь собирается из данных (id, поиск), поэтому проверяем
+ * уже разобранный адрес (URL сам сворачивает «..» и «%2e%2e»): тот же хост и путь внутри /api/.
+ */
+export function apiUrl(path: string): string {
+  const url = new URL(path, window.location.origin);
+  if (url.origin !== window.location.origin || !url.pathname.startsWith("/api/"))
+    throw new ApiError(`недопустимый адрес запроса: ${path}`);
+  return url.pathname + url.search;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const r = await fetch(path, {
+  const r = await fetch(apiUrl(path), {
     method,
     credentials: "same-origin",
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
@@ -36,13 +47,13 @@ export const api = {
   upload: async <T>(path: string, file: File): Promise<T> => {
     const fd = new FormData();
     fd.append("file", file);
-    return parse<T>(await fetch(path, { method: "POST", body: fd, credentials: "same-origin" }));
+    return parse<T>(await fetch(apiUrl(path), { method: "POST", body: fd, credentials: "same-origin" }));
   },
 };
 
 /** Скачать файл с сервера (по сессии). */
 export async function download(path: string, name: string) {
-  const r = await fetch(path, { credentials: "same-origin" });
+  const r = await fetch(apiUrl(path), { credentials: "same-origin" });
   if (!r.ok) {
     await parse(r);
     return;

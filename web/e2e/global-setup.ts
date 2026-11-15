@@ -7,6 +7,8 @@ import { BASE } from "./playwright.config.ts";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 export const PASSWORDS = { admin: "Kedr#Taiga-29", viewer: "Sosna!Reka-47" };
+/** Пароль, который admin выдаёт viewer; при первом входе viewer меняет его на PASSWORDS.viewer. */
+const VIEWER_ISSUED = `${PASSWORDS.viewer}-new`;
 
 /** Временная демо-база → сервер на 8190 с собранным фронтом → пароли сменены → вход admin и viewer сохранён. */
 export default async function globalSetup() {
@@ -54,10 +56,10 @@ export default async function globalSetup() {
   };
   const admin = await login("admin", "admin");
   await admin.post("/api/users", {
-    data: { login: "viewer", name: "Зрителев Пётр", role: "viewer", password: "Lipa#Dom-36x" },
+    data: { login: "viewer", name: "Зрителев Пётр", role: "viewer", password: VIEWER_ISSUED },
     headers: { origin: BASE },
   });
   await admin.storageState({ path: join(import.meta.dirname, ".auth/admin.json") });
-  const viewer = await login("viewer", "Lipa#Dom-36x");
+  const viewer = await login("viewer", VIEWER_ISSUED);
   await viewer.storageState({ path: join(import.meta.dirname, ".auth/viewer.json") });
 }
