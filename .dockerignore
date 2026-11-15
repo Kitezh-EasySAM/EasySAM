@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+agent/target
+agent/dist
+web/dist
+docs
+*.db
+*.db-*
+.env
+.git
+.~lock.*
+**/.~lock.*

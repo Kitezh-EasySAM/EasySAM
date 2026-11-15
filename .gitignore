@@ -1,0 +1,28 @@
+node_modules/
+*.db
+*.db-*
+.env
+agent/target/
+agent/state.json
+.~lock.*
+agent/dist/
+web/dist/
+presentation/preview.html
+presentation/build_deck.py
+presentation/EasySAM.pptx
+presentation/screenshots.mjs
+presentation/ВИДЕО.md
+presentation/ВЫСТУПЛЕНИЕ.md
+presentation/shots/report-page.png
+
+# рабочие файлы выполнения планов (superpowers)
+.superpowers/
+
+# SonarQube: покрытие и рабочая папка сканера
+coverage/
+.scannerwork/
+
+# e2e (Playwright): состояние входа, отчёты
+web/e2e/.auth/
+web/test-results/
+web/playwright-report/

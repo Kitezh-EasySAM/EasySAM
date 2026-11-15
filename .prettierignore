@@ -1,0 +1,13 @@
+node_modules
+web/dist
+agent/target
+agent/dist
+материалы
+server/assets
+package-lock.json
+*.md
+.superpowers
+.venv
+tools
+web/test-results
+web/e2e/.auth

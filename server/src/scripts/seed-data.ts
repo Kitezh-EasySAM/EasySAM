@@ -1,0 +1,305 @@
+/** Данные для seed: корпоративные продукты (их нет в перечне организаторов, но они стоят на хостах),
+ *  справочники для синтетики. ВСЁ, что про закупки, цены и людей, — ДЕМО-данные (в материалах их нет). */
+import type { InternalStatus, LicenseKind } from "../services/compliance.ts";
+
+export interface Purchase {
+  seats: number;
+  until: string | null;
+  contract: string;
+}
+/** minVersion — номер версии, как его пишет реестр (Office 2013 = 15.0, AutoCAD 2018 = 22.0), а не год в названии. */
+export interface Corp {
+  name: string;
+  vendor: string;
+  kind: LicenseKind;
+  status: InternalStatus;
+  minVersion?: string;
+  section: string;
+  klass: string;
+  license: string;
+  inRuRegistry?: boolean;
+  price: number; // ₽ за место (демо)
+  match: RegExp;
+  exclude?: RegExp; // по сырому DISPLAYNAME на хостах
+  purchases: (installed: number) => Purchase[]; // как «купили» относительно факта (сценарии демо)
+}
+
+const OS = "05 - Прикладное программное обеспечение";
+const SYS = "02 - Системное программное обеспечение";
+const none = () => [] as Purchase[];
+
+export const CORPORATE: Corp[] = [
+  {
+    name: "Microsoft Office",
+    vendor: "Microsoft",
+    kind: "commercial",
+    status: "current",
+    minVersion: "15.0",
+    section: OS,
+    klass: "Офисные приложения",
+    license: "Microsoft Volume License (демо)",
+    price: 15000,
+    match: /^microsoft office (standard|professional|plus|home|стандартный|профессиональный)/i,
+    // сценарий «штрафной риск»: куплено ~88% от установленного, часть закупки уже просрочена
+    purchases: (n) => [
+      { seats: Math.floor(n * 0.7), until: null, contract: "Д-2019/044" },
+      { seats: Math.floor(n * 0.18), until: "2027-06-30", contract: "Д-2024/210" },
+      { seats: 25, until: "2025-12-31", contract: "Д-2022/098 (истёк)" },
+    ],
+  },
+  {
+    name: "Microsoft Visio",
+    vendor: "Microsoft",
+    kind: "commercial",
+    status: "current",
+    minVersion: "15.0",
+    section: OS,
+    klass: "Офисные приложения",
+    license: "Microsoft Volume License (демо)",
+    price: 22000,
+    match: /^microsoft (office )?visio/i,
+    exclude: /viewer|compatibility|service pack/i,
+    purchases: (n) => [{ seats: n + 9, until: null, contract: "Д-2018/071" }],
+  }, // сценарий «простой»
+  {
+    name: "Microsoft Project",
+    vendor: "Microsoft",
+    kind: "commercial",
+    status: "outdated",
+    minVersion: "15.0",
+    section: OS,
+    klass: "Системы управления проектами",
+    license: "Microsoft Volume License (демо)",
+    price: 25000,
+    match: /^microsoft (office )?project/i,
+    purchases: none,
+  },
+  {
+    name: "Adobe Photoshop",
+    vendor: "Adobe",
+    kind: "commercial",
+    status: "outdated",
+    minVersion: "21",
+    section: OS,
+    klass: "Офисные приложения",
+    license: "Adobe EULA (демо)",
+    price: 35000,
+    match: /^adobe photoshop cs\d/i,
+    purchases: none,
+  }, // сценарий «нелицензионный Photoshop»
+  {
+    name: "Autodesk AutoCAD",
+    vendor: "Autodesk",
+    kind: "commercial",
+    status: "current",
+    minVersion: "22.0",
+    section: OS,
+    klass: "Системы автоматизированного проектирования",
+    license: "Autodesk EULA (демо)",
+    price: 180000,
+    match: /^(autodesk )?autocad \d{4}/i,
+    exclude: /vba|enabler|language|support|material/i,
+    purchases: (n) => [{ seats: Math.max(1, n - 2), until: "2027-03-31", contract: "Д-2023/155" }],
+  },
+  {
+    name: "Adobe Acrobat Pro",
+    vendor: "Adobe",
+    kind: "commercial",
+    status: "outdated",
+    minVersion: "20",
+    section: OS,
+    klass: "Офисные приложения",
+    license: "Adobe EULA (демо)",
+    price: 20000,
+    match: /^adobe acrobat (x|xi|dc)? ?pro/i,
+    purchases: none,
+  },
+  {
+    name: "Adobe Acrobat Reader",
+    vendor: "Adobe",
+    kind: "freeware",
+    status: "current",
+    section: OS,
+    klass: "Офисные приложения",
+    license: "Adobe Reader EULA",
+    price: 0,
+    match: /^adobe acrobat reader/i,
+    purchases: none,
+  },
+  {
+    name: "WinRAR",
+    vendor: "win.rar GmbH",
+    kind: "shareware",
+    status: "forbidden",
+    section: OS,
+    klass: "Офисные приложения",
+    license: "WinRAR EULA (shareware)",
+    price: 3000,
+    match: /^winrar/i,
+    purchases: none,
+  }, // сценарий «запрещённое ПО»
+  {
+    name: "Oracle Java SE",
+    vendor: "Oracle",
+    kind: "commercial",
+    status: "current",
+    minVersion: "8",
+    section: "04 - Средства разработки программного обеспечения",
+    klass: "04.01 - Средства подготовки исполнимого кода",
+    license: "Oracle Java SE Subscription (демо)",
+    price: 18000,
+    match: /^(java( \(tm\))? \d+ update|java\(tm\)|java se development kit)/i,
+    purchases: (n) => [{ seats: Math.floor(n * 0.65), until: "2027-01-31", contract: "Д-2024/301" }],
+  },
+  {
+    name: "Kaspersky Endpoint Security",
+    vendor: "Лаборатория Касперского",
+    kind: "commercial",
+    status: "current",
+    section: SYS,
+    klass: "02.07 - Средства защиты информации",
+    license: "Kaspersky EULA (демо)",
+    price: 2500,
+    inRuRegistry: true,
+    match: /^(kaspersky endpoint security для windows|агент администрирования kaspersky)/i,
+    purchases: (n) => [{ seats: n + 25, until: "2027-06-30", contract: "Д-2024/052" }],
+  },
+  {
+    name: "DIRECTUM",
+    vendor: "Компания DIRECTUM",
+    kind: "commercial",
+    status: "current",
+    section: OS,
+    klass: "Системы электронного документооборота",
+    license: "DIRECTUM EULA (демо)",
+    price: 30000,
+    inRuRegistry: true,
+    match: /^клиентская часть системы directum/i,
+    purchases: (n) => [{ seats: n, until: null, contract: "Д-2017/009" }],
+  },
+  {
+    name: "SAP GUI for Windows",
+    vendor: "SAP",
+    kind: "commercial",
+    status: "current",
+    minVersion: "7.40",
+    section: OS,
+    klass: "Системы управления процессами организации",
+    license: "SAP EULA (демо)",
+    price: 45000,
+    match: /^sap gui for windows/i,
+    purchases: (n) => [{ seats: n + 10, until: null, contract: "Д-2016/120" }],
+  },
+  {
+    name: "Google Chrome",
+    vendor: "Google",
+    kind: "freeware",
+    status: "current",
+    section: OS,
+    klass: "Прикладное программное обеспечение общего назначения",
+    license: "Условия предоставления услуг Google Chrome",
+    price: 0,
+    match: /^google chrome$/i,
+    purchases: none,
+  },
+  {
+    name: "7-Zip",
+    vendor: "Igor Pavlov",
+    kind: "open_source",
+    status: "current",
+    minVersion: "19.00",
+    section: OS,
+    klass: "Прикладное программное обеспечение общего назначения",
+    license: "GNU Lesser General Public License (GNU LGPL)",
+    price: 0,
+    match: /^7-zip/i,
+    purchases: none,
+  },
+  {
+    name: "VMware vSphere Client",
+    vendor: "VMware",
+    kind: "freeware",
+    status: "outdated",
+    minVersion: "6.5",
+    section: SYS,
+    klass: "02.05 - Средства обеспечения облачных и распределенных вычислений",
+    license: "VMware EULA",
+    price: 0,
+    match: /^vmware vsphere client/i,
+    purchases: none,
+  },
+];
+
+export const DEPARTMENTS = [
+  "Бухгалтерия",
+  "ИТ-департамент",
+  "Проектный офис",
+  "Отдел АСУТП",
+  "Юридический отдел",
+  "Склад",
+  "Геология",
+  "Дизайн",
+  "Охрана труда",
+  "Закупки",
+];
+export const LAST = [
+  "Иванов",
+  "Петров",
+  "Сидоров",
+  "Смирнов",
+  "Кузнецов",
+  "Попов",
+  "Васильев",
+  "Соколов",
+  "Михайлов",
+  "Новиков",
+  "Фёдоров",
+  "Морозов",
+  "Волков",
+  "Алексеев",
+  "Лебедев",
+  "Семёнов",
+  "Егоров",
+  "Павлов",
+  "Козлов",
+  "Степанов",
+  "Николаев",
+  "Орлов",
+  "Андреев",
+  "Макаров",
+  "Никитин",
+];
+export const FIRST = [
+  "Александр",
+  "Дмитрий",
+  "Максим",
+  "Сергей",
+  "Андрей",
+  "Алексей",
+  "Артём",
+  "Илья",
+  "Кирилл",
+  "Михаил",
+  "Анна",
+  "Мария",
+  "Елена",
+  "Ольга",
+  "Наталья",
+  "Екатерина",
+  "Ирина",
+  "Татьяна",
+  "Светлана",
+  "Юлия",
+];
+export const FEMALE = new Set([
+  "Анна",
+  "Мария",
+  "Елена",
+  "Ольга",
+  "Наталья",
+  "Екатерина",
+  "Ирина",
+  "Татьяна",
+  "Светлана",
+  "Юлия",
+]); // фамилия +«а»

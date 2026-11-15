@@ -1,0 +1,31 @@
+{
+  "name": "sam-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../.env --watch src/index.ts",
+    "start": "node --env-file-if-exists=../.env src/index.ts",
+    "test": "AUTH=off INGEST_TOKEN=dev-token AGENT_DIST= node --test --experimental-test-isolation=none test/",
+    "typecheck": "tsc --noEmit",
+    "noise-report": "node src/scripts/noise-report.ts",
+    "seed": "node src/scripts/run-seed.ts",
+    "demo": "node src/scripts/run-demo.ts",
+    "watch": "node src/scripts/watch.ts",
+    "enroll-key": "node --env-file-if-exists=../.env src/scripts/enroll-key.ts",
+    "user": "node --env-file-if-exists=../.env src/scripts/user.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pdfkit": "^0.17.7",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.4.3",
+    "@fastify/multipart": "^10.1.8",
+    "@fastify/static": "^10.1.11",
+    "exceljs": "^4.4.0",
+    "fastify": "^5.12.8",
+    "pdfkit": "^0.17.2",
+    "zod": "^4.6.7"
+  }
+}

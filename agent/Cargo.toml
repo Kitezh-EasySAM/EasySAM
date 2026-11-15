@@ -1,0 +1,25 @@
+[package]
+name = "sam-agent"
+version = "0.1.0"
+edition = "2021"
+description = "SAM agent: следит за установленным ПО (реестр Windows) и шлёт снимок/события на сервер"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# TLS системный (Windows: SChannel, без C-зависимостей; корпоративные сертификаты из хранилища Windows)
+ureq = { version = "2", default-features = false, features = ["json", "native-tls"] }
+native-tls = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+windows-service = "0.8"
+# GetSystemFirmwareTable('RSMB') — серийник из SMBIOS (в реестре его нет). Та же версия, что у windows-service.
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_SystemInformation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Threading", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_Security", "Win32_Globalization"] }
+# лицензии Windows/Office: WMI SoftwareLicensingProduct / OfficeSoftwareProtectionProduct
+wmi = "0.17"
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
